@@ -225,7 +225,7 @@ public class OSMApplyDiffOp extends AbstractGeoGigOp<Optional<OSMReport>> {
                     .setChildPath(OSMUtils.NODE_TYPE_NAME).setParent(workTree.getTree()).call();
             checkArgument(waysNodeRef.isPresent() || nodesNodeRef.isPresent(),
                     "There is no OSM data currently in the repository");
-            Envelope envelope = new Envelope();
+            Envelope envelope = new Envelope(-180,180,-90,90);
             if (waysNodeRef.isPresent()) {
                 waysNodeRef.get().expand(envelope);
             }
@@ -317,8 +317,11 @@ public class OSMApplyDiffOp extends AbstractGeoGigOp<Optional<OSMReport>> {
                 return;
             }
             if (geom != null) {
-                System.err.printf("%s within %s? %s\n", geom, bbox, geom.within(bbox));
-                if (changeAction.equals(ChangeAction.Create) && geom.within(bbox)
+            	boolean within = geom.within(bbox);
+            	if (!within) {
+            		System.err.printf("%s within %s? %s\n", geom, bbox, geom.within(bbox));
+            	}
+                if (changeAction.equals(ChangeAction.Create) && within
                         || changeAction.equals(ChangeAction.Modify)) {
                     Feature feature = converter.toFeature(entity, geom);
                     target.put(feature);
