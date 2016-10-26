@@ -327,6 +327,9 @@ public class MappingRule {
         GeomRestriction restriction = getGeomRestriction();
         GeometryAttribute property = feature.getDefaultGeometryProperty();
         Geometry geom = (Geometry) property.getValue();
+        if (geom == null) {
+        	return false; // not compatible if it doesn't exist
+        }
         if (geom.getClass().equals(Point.class)) {
             return geometryType == Point.class;
         } else {
