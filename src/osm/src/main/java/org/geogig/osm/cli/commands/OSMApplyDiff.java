@@ -50,11 +50,11 @@ public class OSMApplyDiff extends AbstractCommand implements CLICommand {
                 if (rep.getUnpprocessedCount() > 0) {
                     msg = String
                             .format("\nSome diffs from the specified file were not applied.\n"
-                                    + "Processed entities: %,d.\n %,d.\nNodes: %,d.\nWays: %,d.\n Elements not applied:",
+                                    + "Total Items in Diff: %,d.\nUnprocessed items: %,d.\nTotal Nodes in diff: %,d.\nTotal Ways in diff: %,d.\n",
                                     rep.getCount(), rep.getUnpprocessedCount(), rep.getNodeCount(),
                                     rep.getWayCount());
                 } else {
-                    msg = String.format("\nProcessed entities: %,d.\n Nodes: %,d.\n Ways: %,d\n",
+                    msg = String.format("\nAll items processed.  Total items: %,d.\n Nodes: %,d.\n Ways: %,d\n",
                             rep.getCount(), rep.getNodeCount(), rep.getWayCount());
                 }
                 cli.getConsole().println(msg);
