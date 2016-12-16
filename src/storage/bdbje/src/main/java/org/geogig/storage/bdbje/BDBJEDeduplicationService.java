@@ -12,9 +12,9 @@ package org.geogig.storage.bdbje;
 import java.io.File;
 import java.io.IOException;
 
-import org.locationtech.geogig.model.DefaultPlatform;
-import org.locationtech.geogig.repository.DeduplicationService;
-import org.locationtech.geogig.repository.Deduplicator;
+import org.locationtech.geogig.model.impl.DefaultPlatform;
+import org.locationtech.geogig.repository.impl.DeduplicationService;
+import org.locationtech.geogig.repository.impl.Deduplicator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;

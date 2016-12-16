@@ -28,8 +28,8 @@ import org.locationtech.geogig.model.RevTree;
 import org.locationtech.geogig.plumbing.LsTreeOp;
 import org.locationtech.geogig.plumbing.ResolveFeatureType;
 import org.locationtech.geogig.plumbing.RevObjectParse;
-import org.locationtech.geogig.repository.GeoGIG;
 import org.locationtech.geogig.repository.NodeRef;
+import org.locationtech.geogig.repository.impl.GeoGIG;
 import org.locationtech.geogig.test.TestPlatform;
 
 import com.google.common.base.Optional;

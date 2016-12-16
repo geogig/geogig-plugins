@@ -12,8 +12,8 @@ package org.geogig.test.integration.je;
 import org.locationtech.geogig.di.GeogigModule;
 import org.locationtech.geogig.di.HintsModule;
 import org.locationtech.geogig.repository.Context;
-import org.locationtech.geogig.repository.ContextBuilder;
 import org.locationtech.geogig.repository.Hints;
+import org.locationtech.geogig.repository.impl.ContextBuilder;
 
 import com.google.inject.Guice;
 import com.google.inject.util.Modules;

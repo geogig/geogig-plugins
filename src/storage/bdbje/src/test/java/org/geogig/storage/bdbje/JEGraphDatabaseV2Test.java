@@ -15,8 +15,8 @@ import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.Platform;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.GraphDatabase;
-import org.locationtech.geogig.storage.GraphDatabaseTest;
 import org.locationtech.geogig.storage.fs.IniFileConfigDatabase;
+import org.locationtech.geogig.storage.impl.GraphDatabaseTest;
 
 import com.google.common.base.Preconditions;
 

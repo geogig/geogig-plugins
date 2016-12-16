@@ -13,7 +13,7 @@ import java.io.File;
 
 import org.junit.Test;
 import org.locationtech.geogig.plumbing.CreateDeduplicator;
-import org.locationtech.geogig.repository.DeduplicationService;
+import org.locationtech.geogig.repository.impl.DeduplicationService;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
 
 public class BDBJEDeduplicationServiceTest extends RepositoryTestCase {

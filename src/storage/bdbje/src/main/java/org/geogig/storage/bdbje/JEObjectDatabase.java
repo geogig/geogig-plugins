@@ -37,14 +37,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jdt.annotation.Nullable;
 import org.locationtech.geogig.model.ObjectId;
 import org.locationtech.geogig.model.RevObject;
-import org.locationtech.geogig.storage.AbstractObjectDatabase;
 import org.locationtech.geogig.storage.BlobStore;
 import org.locationtech.geogig.storage.BulkOpListener;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.ObjectDatabase;
-import org.locationtech.geogig.storage.ObjectSerializingFactory;
 import org.locationtech.geogig.storage.fs.FileBlobStore;
 import org.locationtech.geogig.storage.fs.FileConflictsDatabase;
+import org.locationtech.geogig.storage.impl.AbstractObjectDatabase;
+import org.locationtech.geogig.storage.impl.ObjectSerializingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -758,7 +758,7 @@ abstract class JEObjectDatabase extends AbstractObjectDatabase implements Object
 
     private class CursorRevObjectIterator extends AbstractIterator<RevObject> implements Closeable {
 
-        private final ObjectSerializingFactory reader = JEObjectDatabase.this.serializer;
+        private final ObjectSerializingFactory reader = JEObjectDatabase.this.serializer();
 
         @Nullable
         private Transaction transaction;

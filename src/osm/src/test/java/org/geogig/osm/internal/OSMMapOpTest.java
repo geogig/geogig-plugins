@@ -31,7 +31,7 @@ import org.locationtech.geogig.porcelain.CommitOp;
 import org.locationtech.geogig.repository.NodeRef;
 import org.locationtech.geogig.repository.WorkingTree;
 import org.locationtech.geogig.storage.BlobStore;
-import org.locationtech.geogig.storage.Blobs;
+import org.locationtech.geogig.storage.impl.Blobs;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
 import org.opengis.feature.type.PropertyDescriptor;
 

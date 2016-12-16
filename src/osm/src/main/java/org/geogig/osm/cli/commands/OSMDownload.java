@@ -26,8 +26,8 @@ import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.plumbing.TransactionBegin;
 import org.locationtech.geogig.porcelain.NothingToCommitException;
 import org.locationtech.geogig.repository.AbstractGeoGigOp;
-import org.locationtech.geogig.repository.GeoGIG;
-import org.locationtech.geogig.repository.GeogigTransaction;
+import org.locationtech.geogig.repository.impl.GeoGIG;
+import org.locationtech.geogig.repository.impl.GeogigTransaction;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;

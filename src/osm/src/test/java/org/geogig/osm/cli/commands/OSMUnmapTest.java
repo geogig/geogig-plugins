@@ -23,7 +23,7 @@ import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.model.RevFeature;
 import org.locationtech.geogig.model.RevTree;
 import org.locationtech.geogig.plumbing.RevObjectParse;
-import org.locationtech.geogig.repository.GeoGIG;
+import org.locationtech.geogig.repository.impl.GeoGIG;
 import org.locationtech.geogig.test.TestPlatform;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
 

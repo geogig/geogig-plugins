@@ -12,7 +12,7 @@ package org.geogig.osm.internal.log;
 import org.geogig.osm.internal.Mapping;
 import org.locationtech.geogig.repository.AbstractGeoGigOp;
 import org.locationtech.geogig.storage.BlobStore;
-import org.locationtech.geogig.storage.Blobs;
+import org.locationtech.geogig.storage.impl.Blobs;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;

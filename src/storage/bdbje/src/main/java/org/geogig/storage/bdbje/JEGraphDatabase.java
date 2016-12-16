@@ -26,7 +26,7 @@ import org.locationtech.geogig.repository.RepositoryConnectionException;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.GraphDatabase;
 import org.locationtech.geogig.storage.StorageType;
-import org.locationtech.geogig.storage.SynchronizedGraphDatabase;
+import org.locationtech.geogig.storage.impl.SynchronizedGraphDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

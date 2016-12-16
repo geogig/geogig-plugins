@@ -14,7 +14,7 @@ import java.util.List;
 
 import org.locationtech.geogig.repository.AbstractGeoGigOp;
 import org.locationtech.geogig.storage.BlobStore;
-import org.locationtech.geogig.storage.Blobs;
+import org.locationtech.geogig.storage.impl.Blobs;
 
 /**
  * Returns the set of entries of the OSM log in the current repository.

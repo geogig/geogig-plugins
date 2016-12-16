@@ -14,14 +14,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.locationtech.geogig.model.RevFeatureBuilder;
 import org.locationtech.geogig.model.RevFeatureType;
-import org.locationtech.geogig.model.RevFeatureTypeBuilder;
+import org.locationtech.geogig.model.impl.RevFeatureBuilder;
+import org.locationtech.geogig.model.impl.RevFeatureTypeBuilder;
 import org.locationtech.geogig.repository.DefaultProgressListener;
 import org.locationtech.geogig.repository.FeatureInfo;
-import org.locationtech.geogig.repository.FeatureToDelete;
 import org.locationtech.geogig.repository.NodeRef;
 import org.locationtech.geogig.repository.Repository;
+import org.locationtech.geogig.repository.impl.FeatureToDelete;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.FeatureType;
 

@@ -19,7 +19,7 @@ import org.locationtech.geogig.model.ObjectId;
 import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.GraphDatabase;
-import org.locationtech.geogig.storage.SynchronizedGraphDatabase;
+import org.locationtech.geogig.storage.impl.SynchronizedGraphDatabase;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;

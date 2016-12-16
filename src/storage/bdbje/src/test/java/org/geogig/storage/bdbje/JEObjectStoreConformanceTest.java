@@ -13,8 +13,8 @@ import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.Platform;
 import org.locationtech.geogig.storage.ConfigDatabase;
 import org.locationtech.geogig.storage.ObjectDatabase;
-import org.locationtech.geogig.storage.ObjectStoreConformanceTest;
 import org.locationtech.geogig.storage.fs.IniFileConfigDatabase;
+import org.locationtech.geogig.storage.impl.ObjectStoreConformanceTest;
 
 public class JEObjectStoreConformanceTest extends ObjectStoreConformanceTest {
 

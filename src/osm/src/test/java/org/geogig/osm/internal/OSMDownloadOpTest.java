@@ -27,7 +27,7 @@ import org.locationtech.geogig.model.RevCommit;
 import org.locationtech.geogig.porcelain.LogOp;
 import org.locationtech.geogig.porcelain.NothingToCommitException;
 import org.locationtech.geogig.storage.BlobStore;
-import org.locationtech.geogig.storage.Blobs;
+import org.locationtech.geogig.storage.impl.Blobs;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
 
 import com.google.common.base.Optional;

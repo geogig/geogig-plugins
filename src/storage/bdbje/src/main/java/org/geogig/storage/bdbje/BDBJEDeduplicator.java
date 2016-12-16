@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.locationtech.geogig.model.ObjectId;
-import org.locationtech.geogig.repository.Deduplicator;
+import org.locationtech.geogig.repository.impl.Deduplicator;
 
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
