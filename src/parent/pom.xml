@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.locationtech.geogig</groupId>
+    <artifactId>geogig</artifactId>
+    <version>1.0-RC4</version>
+  </parent>
+
+  <groupId>org.geogig</groupId>
+  <artifactId>geogig-plugins</artifactId>
+  <packaging>pom</packaging>
+  <name>GeoGig Plugins</name>
+  <inceptionYear>2016</inceptionYear>
+
+  <repositories>
+    <repository>
+      <id>repo.locationtech.org</id>
+      <name>GeoGig Repository</name>
+      <url>https://repo.locationtech.org/content/repositories/geogig/</url>
+    </repository>
+    <repository>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>https://repo.boundlessgeo.com/main/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>osgeo</id>
+      <name>Open Source Geospatial Foundation Repository</name>
+      <url>http://download.osgeo.org/webdav/geotools/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>mapfish</id> <!-- for com.noelios.restlet -->
+      <name>mapfish</name>
+      <url>http://dev.mapfish.org/maven/repository/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  
+  <properties>
+    <osmosis.version>0.43.1</osmosis.version>
+    <bdbje.version>5.0.84</bdbje.version>
+    <woodstox.version>4.2.0</woodstox.version>
+    <junit.version>4.12</junit.version>
+    <mockito.version>2.0.2-beta</mockito.version>
+    <guava.version>18.0</guava.version>
+    <guice.version>4.0</guice.version>
+    <slf4j.version>1.7.5</slf4j.version>
+    <jdt-annotation.version>1.1.0</jdt-annotation.version>
+  </properties>
+  
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.sleepycat</groupId>
+        <artifactId>je</artifactId>
+        <version>${bdbje.version}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>${guice.version}</version>
+        <classifier>no_aop</classifier>
+        <exclusions>
+          <exclusion>
+           <groupId>aopalliance</groupId>
+           <artifactId>aopalliance</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      
+      <dependency>
+        <groupId>com.google.inject.extensions</groupId>
+        <artifactId>guice-multibindings</artifactId>
+        <version>${guice.version}</version>
+        <exclusions>
+          <exclusion>
+           <groupId>com.google.inject</groupId>
+           <artifactId>guice</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.eclipse.jdt</groupId>
+        <artifactId>org.eclipse.jdt.annotation</artifactId>
+        <version>${jdt-annotation.version}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      
+      <!-- Test scope dependencies -->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${mockito.version}</version>
+        <scope>test</scope>
+      </dependency>
+  	</dependencies>
+  </dependencyManagement>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.2.1</version>
+        <configuration>
+          <skipAssembly>true</skipAssembly>
+          <appendAssemblyId>false</appendAssemblyId>
+          <descriptors>
+            <descriptor>assembly-zip.xml</descriptor>
+          </descriptors>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <modules>
+   <module>../storage</module>
+   <module>../osm</module>
+  </modules>
+</project>
