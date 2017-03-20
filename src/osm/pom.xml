@@ -141,13 +141,6 @@
       <classifier>tests</classifier>
     </dependency>
     <dependency>
-      <groupId>org.geogig</groupId>
-      <artifactId>geogig-plugins-bdbje</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

@@ -14,9 +14,11 @@ import java.io.File;
 import org.geogig.osm.internal.OSMImportOp;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.locationtech.geogig.cli.CLIContextBuilder;
 import org.locationtech.geogig.cli.Console;
 import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.model.ObjectId;
@@ -24,8 +26,9 @@ import org.locationtech.geogig.model.RevTree;
 import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.plumbing.RevParse;
 import org.locationtech.geogig.porcelain.DiffOp;
-import org.locationtech.geogig.repository.AutoCloseableIterator;
 import org.locationtech.geogig.repository.DiffEntry;
+import org.locationtech.geogig.repository.impl.GlobalContextBuilder;
+import org.locationtech.geogig.storage.AutoCloseableIterator;
 import org.locationtech.geogig.test.TestPlatform;
 
 import com.google.common.base.Optional;
@@ -36,6 +39,11 @@ public class OSMExportTest extends Assert {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @BeforeClass
+    public static void classSetup() {
+        GlobalContextBuilder.builder(new CLIContextBuilder());
+    }
 
     @Before
     public void setUp() throws Exception {
