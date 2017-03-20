@@ -49,7 +49,6 @@
   
   <properties>
     <osmosis.version>0.43.1</osmosis.version>
-    <bdbje.version>5.0.84</bdbje.version>
     <woodstox.version>4.2.0</woodstox.version>
     <junit.version>4.12</junit.version>
     <mockito.version>2.0.2-beta</mockito.version>
@@ -61,12 +60,6 @@
   
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>com.sleepycat</groupId>
-        <artifactId>je</artifactId>
-        <version>${bdbje.version}</version>
-      </dependency>
-      
       <dependency>
         <groupId>com.google.inject</groupId>
         <artifactId>guice</artifactId>
@@ -138,7 +131,6 @@
   </build>
   
   <modules>
-   <module>../storage</module>
    <module>../osm</module>
   </modules>
 </project>
