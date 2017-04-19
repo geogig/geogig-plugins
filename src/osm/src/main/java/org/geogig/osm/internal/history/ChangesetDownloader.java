@@ -24,6 +24,7 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -170,8 +172,8 @@ class ChangesetDownloader {
             return Optional.of(changesFile);
         }
 
-        private InputStream tryFetch(final String changeUrl) throws SocketTimeoutException,
-                FileNotFoundException {
+        private InputStream tryFetch(final String changeUrl)
+                throws SocketTimeoutException, FileNotFoundException {
 
             final int maxTryCount = 5;
 
@@ -189,8 +191,8 @@ class ChangesetDownloader {
                 }
             }
 
-            throw new SocketTimeoutException(String.format("Unable to fetch %s after %d attempts.",
-                    changeUrl, maxTryCount));
+            throw new SocketTimeoutException(
+                    String.format("Unable to fetch %s after %d attempts.", changeUrl, maxTryCount));
         }
 
     }
@@ -215,9 +217,9 @@ class ChangesetDownloader {
         return new File(parent, "download.xml");
     }
 
-    private static InputStream openStream(final String uri, final int readTimeoutMinutes,
-            @Nullable ProgressListener listener) throws FileNotFoundException,
-            SocketTimeoutException {
+    public static InputStream openStream(final String uri, final int readTimeoutMinutes,
+            @Nullable ProgressListener listener)
+            throws FileNotFoundException, SocketTimeoutException {
         InputStream stream;
         URLConnection conn;
         try {
@@ -300,12 +302,12 @@ class ChangesetDownloader {
         return url;
     }
 
-    private String canonicalChangesetUrl(long changesetId) {
+    public String canonicalChangesetUrl(long changesetId) {
         String url = osmAPIUrl + (osmAPIUrl.endsWith("/") ? "" : "/") + "changeset/" + changesetId;
         return url;
     }
 
-    private String changeUrl(long changesetId) {
+    public String changeUrl(long changesetId) {
         String url = canonicalChangesetUrl(changesetId) + "/download.xml";
         return url;
     }
@@ -318,7 +320,8 @@ class ChangesetDownloader {
 
         private int readCount;
 
-        public ProgressInputStream(InputStream stream, int contentLength, ProgressListener listener) {
+        public ProgressInputStream(InputStream stream, int contentLength,
+                ProgressListener listener) {
             super(stream);
             this.contentLength = contentLength;
             this.listener = listener;
@@ -366,6 +369,71 @@ class ChangesetDownloader {
             tmp.renameTo(to);
         } catch (Exception e) {
             tmp.delete();
+        }
+    }
+
+    public Future<Long> download(Long changesetId, int timeoutMinutes, AtomicBoolean abortFlag)
+            throws IOException {
+        return executor
+                .submit(new SingleChangesetDownloadTask(changesetId, timeoutMinutes, abortFlag));
+    }
+
+    private class SingleChangesetDownloadTask implements Callable<Long> {
+
+        private Long changesetId;
+
+        private int timeoutMinutes;
+
+        private AtomicBoolean abort;
+
+        SingleChangesetDownloadTask(Long changesetId, int timeoutMinutes, AtomicBoolean abortFlag) {
+            this.changesetId = changesetId;
+            this.timeoutMinutes = timeoutMinutes;
+            this.abort = abortFlag;
+        }
+
+        @Override
+        public Long call() throws Exception {
+            if (abort.get()) {
+                return -1L;
+            }
+            Path downloadPath = downloadFolder.toPath();
+            String changesetUrl = canonicalChangesetUrl(changesetId);
+            String changeUrl = changeUrl(changesetId);
+
+            Path changesetPath = downloadPath.resolve(changesetId + ".xml");
+            Path changePath = downloadPath.resolve(changesetId.toString()).resolve("download.xml");
+            if (java.nio.file.Files.exists(changesetPath)
+                    && java.nio.file.Files.exists(changePath)) {
+                return -1L;
+            }
+            try {
+                copyTo(changesetUrl, changesetPath, timeoutMinutes);
+                copyTo(changeUrl, changePath, timeoutMinutes);
+            } catch (IOException e) {
+                abort.set(true);
+                if (java.nio.file.Files.exists(changesetPath)) {
+                    java.nio.file.Files.delete(changesetPath);
+                }
+                if (java.nio.file.Files.exists(changePath)) {
+                    java.nio.file.Files.delete(changePath);
+                    java.nio.file.Files.delete(changePath.getParent());
+                }
+                throw e;
+            }
+            return changesetId;
+        }
+
+    }
+
+    private void copyTo(String url, Path target, int timeoutMinutes) throws IOException {
+        if (java.nio.file.Files.exists(target)) {
+            java.nio.file.Files.delete(target);
+        } else {
+            java.nio.file.Files.createDirectories(target.getParent());
+        }
+        try (InputStream stream = openStream(url, timeoutMinutes, null)) {
+            java.nio.file.Files.copy(stream, target);
         }
     }
 }

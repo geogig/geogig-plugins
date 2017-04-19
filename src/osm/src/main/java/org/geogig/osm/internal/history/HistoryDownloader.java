@@ -18,10 +18,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.stream.XMLStreamException;
+
+import org.locationtech.geogig.repository.ProgressListener;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -89,6 +95,43 @@ public class HistoryDownloader {
             return parseChanges(changesFile);
         }
 
+    }
+
+    public void downloadAll(ProgressListener progressListener) {
+        Range<Long> range = Range.closed(initialChangeset, finalChangeset);
+        ContiguousSet<Long> changesetIds = ContiguousSet.create(range, DiscreteDomain.longs());
+
+        progressListener.setDescription(
+                "Downloading changesets " + initialChangeset + " to " + finalChangeset + "...");
+
+        final int readTimeoutMinutes = 20;
+
+        final AtomicBoolean abortFlag = new AtomicBoolean();
+
+        List<Future<Long>> futures = new LinkedList<>();
+        for (Long changesetId : changesetIds) {
+            try {
+                Future<Long> future = downloader.download(changesetId, readTimeoutMinutes,
+                        abortFlag);
+                futures.add(future);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw Throwables.propagate(e);
+            }
+        }
+        for (Future<Long> f : futures) {
+            try {
+                Long id = f.get();
+                if (-1L == id.longValue()) {
+                    continue;
+                }
+                progressListener.setDescription("Downloaded changeset " + id + ".");
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                throw Throwables.propagate(e);
+            }
+        }
+        progressListener.setDescription("Done!");
     }
 
     /**
@@ -172,5 +215,4 @@ public class HistoryDownloader {
         }
         return stream;
     }
-
 }

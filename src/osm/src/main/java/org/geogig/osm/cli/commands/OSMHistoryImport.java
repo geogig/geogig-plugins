@@ -118,13 +118,18 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         Console console = cli.getConsole();
 
         final String osmAPIUrl = resolveAPIURL();
+        final File targetDir = resolveTargetDir(cli.getPlatform());
 
         final long startIndex;
         final long endIndex = args.endIndex;
         if (args.resume) {
             GeoGIG geogig = cli.getGeogig();
-            long lastChangeset = getCurrentBranchChangeset(geogig);
-            startIndex = 1 + lastChangeset;
+            if (args.downloadOnly) {
+                startIndex = args.startIndex;
+            } else {
+                long lastChangeset = getCurrentBranchChangeset(geogig);
+                startIndex = 1 + lastChangeset;
+            }
         } else {
             startIndex = args.startIndex;
         }
@@ -135,7 +140,6 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 .setNameFormat("osm-history-fetch-thread-%d").build();
         final ExecutorService executor = Executors.newFixedThreadPool(args.numThreads,
                 threadFactory);
-        final File targetDir = resolveTargetDir(cli.getPlatform());
         console.println("Downloading to " + targetDir.getAbsolutePath());
         console.flush();
 
@@ -146,7 +150,11 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         Predicate<Changeset> filter = parseFilter(env);
         downloader.setChangesetFilter(filter);
         try {
-            importOsmHistory(cli, console, downloader, env);
+            if (args.downloadOnly) {
+                downloader.downloadAll(cli.getProgressListener());
+            } else {
+                importOsmHistory(cli, console, downloader, env);
+            }
         } finally {
             executor.shutdownNow();
             try {
@@ -434,7 +442,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             if (features.isEmpty()) {
                 continue;
             }
-            
+
             Map<FeatureType, RevFeatureType> types = new HashMap<>();
             Iterator<FeatureInfo> finfos = Iterators.transform(features.iterator(), (f) -> {
                 FeatureType ft = f.getType();
