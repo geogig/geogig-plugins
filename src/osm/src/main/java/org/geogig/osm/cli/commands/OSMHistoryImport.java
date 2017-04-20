@@ -140,7 +140,6 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 .setNameFormat("osm-history-fetch-thread-%d").build();
         final ExecutorService executor = Executors.newFixedThreadPool(args.numThreads,
                 threadFactory);
-        console.println("Downloading to " + targetDir.getAbsolutePath());
         console.flush();
 
         HistoryDownloader downloader;
@@ -156,6 +155,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 importOsmHistory(cli, console, downloader, env);
             }
         } finally {
+            downloader.dispose();
             executor.shutdownNow();
             try {
                 executor.awaitTermination(30, TimeUnit.SECONDS);

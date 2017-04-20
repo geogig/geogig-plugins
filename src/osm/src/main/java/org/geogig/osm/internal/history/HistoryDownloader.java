@@ -11,12 +11,12 @@ package org.geogig.osm.internal.history;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,22 +25,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.xml.stream.XMLStreamException;
-
 import org.locationtech.geogig.repository.ProgressListener;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.DiscreteDomain;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
-import com.google.common.io.Closeables;
 
 /**
  *
@@ -69,35 +63,41 @@ public class HistoryDownloader {
 
         this.initialChangeset = initialChangeset;
         this.finalChangeset = finalChangeset;
-        this.downloader = new ChangesetDownloader(osmAPIUrl, downloadFolder, executor);
+        this.downloader = resolveDownloader(osmAPIUrl, downloadFolder, executor);
+    }
+
+    private ChangesetDownloader resolveDownloader(String osmAPIUrl, File downloadFolder,
+            ExecutorService executor) {
+        URI uri;
+        try {
+            uri = new URI(osmAPIUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw Throwables.propagate(e);
+        }
+        String scheme = uri.getScheme();
+        if ("http".equals(scheme) || "https".equals(scheme)) {
+            return new RemoteChangesetDownloader(osmAPIUrl, downloadFolder, executor);
+        }
+        if ("file".equals(scheme) || "".equals(scheme) || null == scheme) {
+            Path path;
+            if (null == scheme) {
+                path = Paths.get(osmAPIUrl);
+            } else {
+                path = Paths.get(uri);
+            }
+            checkArgument(Files.exists(path), "%s does not exist", osmAPIUrl);
+            return new LocalChangesetDownloader(path);
+        }
+        throw new IllegalArgumentException("Can't resolve URI to a path:" + uri);
     }
 
     public void setChangesetFilter(Predicate<Changeset> filter) {
         this.filter = filter;
     }
 
-    /**
-    *
-    */
-    private class ChangesSupplier implements Supplier<Optional<Iterator<Change>>> {
-
-        private Supplier<Optional<File>> changesFile;
-
-        /**
-         * @param changesFile2
-         */
-        public ChangesSupplier(Supplier<Optional<File>> changesFile) {
-            this.changesFile = changesFile;
-        }
-
-        @Override
-        public Optional<Iterator<Change>> get() {
-            return parseChanges(changesFile);
-        }
-
-    }
-
     public void downloadAll(ProgressListener progressListener) {
+        RemoteChangesetDownloader downloader = (RemoteChangesetDownloader) this.downloader;
         Range<Long> range = Range.closed(initialChangeset, finalChangeset);
         ContiguousSet<Long> changesetIds = ContiguousSet.create(range, DiscreteDomain.longs());
 
@@ -111,6 +111,7 @@ public class HistoryDownloader {
         List<Future<Long>> futures = new LinkedList<>();
         for (Long changesetId : changesetIds) {
             try {
+
                 Future<Long> future = downloader.download(changesetId, readTimeoutMinutes,
                         abortFlag);
                 futures.add(future);
@@ -144,75 +145,20 @@ public class HistoryDownloader {
         Range<Long> range = Range.closed(initialChangeset, finalChangeset);
         ContiguousSet<Long> changesetIds = ContiguousSet.create(range, DiscreteDomain.longs());
         final int fetchSize = 100;
-        Iterator<List<Long>> partitions = Iterators.partition(changesetIds.iterator(), fetchSize);
+        Iterable<List<Long>> partitions = Iterables.partition(changesetIds, fetchSize);
 
-        final Function<List<Long>, Iterator<Changeset>> asChangesets = (batchIds) -> {
+        final Function<List<Long>, Iterable<Changeset>> asChangesets = (batchIds) -> {
             Iterable<Changeset> changesets = downloader.fetchChangesets(batchIds);
-
-            for (Changeset changeset : changesets) {
-                if (filter.apply(changeset)) {
-                    Supplier<Optional<File>> changesFile;
-                    changesFile = downloader.fetchChanges(changeset.getId());
-                    Supplier<Optional<Iterator<Change>>> changes = new ChangesSupplier(changesFile);
-                    changeset.setChanges(changes);
-                }
-            }
-
-            return changesets.iterator();
+            return changesets;
         };
 
-        Iterator<Iterator<Changeset>> changesets = Iterators.transform(partitions, asChangesets);
-        Iterator<Changeset> concat = Iterators.concat(changesets);
-        return concat;
+        Iterable<Iterable<Changeset>> changesets = Iterables.transform(partitions, asChangesets);
+        Iterable<Changeset> concat = Iterables.concat(changesets);
+        return concat.iterator();
     }
 
-    private Optional<Iterator<Change>> parseChanges(Supplier<Optional<File>> file) {
-
-        final Optional<File> changesFile;
-        try {
-            changesFile = file.get();
-        } catch (RuntimeException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof FileNotFoundException) {
-                return Optional.absent();
-            }
-            throw Throwables.propagate(e);
-        }
-        if (!changesFile.isPresent()) {
-            return Optional.absent();
-        }
-        final File actualFile = changesFile.get();
-        final InputStream stream = openStream(actualFile);
-        final Iterator<Change> changes;
-        ChangesetContentsScanner scanner = new ChangesetContentsScanner();
-        try {
-            changes = scanner.parse(stream);
-        } catch (XMLStreamException e) {
-            throw Throwables.propagate(e);
-        }
-
-        Iterator<Change> iterator = new AbstractIterator<Change>() {
-            @Override
-            protected Change computeNext() {
-                if (!changes.hasNext()) {
-                    Closeables.closeQuietly(stream);
-                    actualFile.delete();
-                    actualFile.getParentFile().delete();
-                    return super.endOfData();
-                }
-                return changes.next();
-            }
-        };
-        return Optional.of(iterator);
+    public void dispose() {
+        downloader.dispose();
     }
 
-    private InputStream openStream(File file) {
-        InputStream stream;
-        try {
-            stream = new BufferedInputStream(new FileInputStream(file), 4096);
-        } catch (FileNotFoundException e) {
-            throw Throwables.propagate(e);
-        }
-        return stream;
-    }
 }
