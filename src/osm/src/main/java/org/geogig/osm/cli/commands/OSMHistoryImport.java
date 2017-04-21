@@ -67,6 +67,7 @@ import org.locationtech.geogig.repository.DefaultProgressListener;
 import org.locationtech.geogig.repository.DiffObjectCount;
 import org.locationtech.geogig.repository.FeatureInfo;
 import org.locationtech.geogig.repository.Platform;
+import org.locationtech.geogig.repository.ProgressListener;
 import org.locationtech.geogig.repository.Repository;
 import org.locationtech.geogig.repository.StagingArea;
 import org.locationtech.geogig.repository.WorkingTree;
@@ -107,13 +108,34 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
     private static final GeometryFactory GEOMF = new GeometryFactory();
 
+    private static class SilentProgressListener extends DefaultProgressListener {
+        private ProgressListener subject;
+
+        public SilentProgressListener(ProgressListener subject) {
+            this.subject = subject;
+        }
+
+        @Override
+        public void cancel() {
+            subject.cancel();
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return subject.isCanceled();
+        }
+    }
+
     @ParametersDelegate
     public HistoryImportArgs args = new HistoryImportArgs();
+
+    private SilentProgressListener silentListener;
 
     @Override
     protected void runInternal(GeogigCLI cli) throws IOException {
         checkParameter(args.numThreads > 0 && args.numThreads < 7,
                 "numthreads must be between 1 and 6");
+        silentListener = new SilentProgressListener(cli.getProgressListener());
 
         Console console = cli.getConsole();
 
@@ -150,7 +172,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         downloader.setChangesetFilter(filter);
         try {
             if (args.downloadOnly) {
-                downloader.downloadAll(cli.getProgressListener());
+                downloader.downloadAll(silentListener);
             } else {
                 importOsmHistory(cli, console, downloader, env);
             }
@@ -260,7 +282,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         GeoGIG geogig = cli.getGeogig();
         WorkingTree workingTree = geogig.getContext().workingTree();
 
-        while (changesets.hasNext()) {
+        while (changesets.hasNext() && !silentListener.isCanceled()) {
             Changeset changeset = changesets.next();
             if (changeset.isOpen()) {
                 throw new CommandFailedException("Can't import past changeset " + changeset.getId()
@@ -283,18 +305,20 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
             ObjectId workTreeId = workingTree.getTree().getId();
             long changeCount = insertChanges(cli, changes, featureFilter);
-            console.print(String.format(" Applied %,d changes, staging...", changeCount));
-            console.flush();
-            ObjectId afterTreeId = workingTree.getTree().getId();
+            if (!silentListener.isCanceled()) {
+                console.print(String.format(" Applied %,d changes, staging...", changeCount));
+                console.flush();
+                ObjectId afterTreeId = workingTree.getTree().getId();
 
-            DiffObjectCount diffCount = geogig.command(DiffCount.class).setOldTree(workTreeId)
-                    .setNewTree(afterTreeId).call();
+                DiffObjectCount diffCount = geogig.command(DiffCount.class).setOldTree(workTreeId)
+                        .setNewTree(afterTreeId).setProgressListener(silentListener).call();
 
-            geogig.command(AddOp.class).call();
-            console.print(String.format(" %,d actual changes.", diffCount.featureCount()));
-            console.flush();
+                geogig.command(AddOp.class).setProgressListener(silentListener).call();
+                console.print(String.format(" %,d actual changes.", diffCount.featureCount()));
+                console.flush();
 
-            commit(cli, changeset);
+                commit(cli, changeset);
+            }
         }
     }
 
@@ -312,6 +336,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         GeoGIG geogig = cli.getGeogig();
         CommitOp command = geogig.command(CommitOp.class);
         command.setAllowEmpty(true);
+        command.setProgressListener(silentListener);
         String message = "";
         if (changeset.getComment().isPresent()) {
             message = changeset.getComment().get() + "\nchangeset " + changeset.getId();
@@ -330,6 +355,9 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         command.setCommitterTimestamp(changeset.getClosed().get());
         command.setCommitterTimeZoneOffset(0);// osm timestamps are in GMT
 
+        if (silentListener.isCanceled()) {
+            return;
+        }
         try {
             RevCommit commit = command.call();
             Ref head = geogig.command(RefParse.class).setName(Ref.HEAD).call().get();
@@ -408,7 +436,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         Set<String> deletes = Sets.newHashSet();
         Multimap<String, SimpleFeature> insertsByParent = HashMultimap.create();
 
-        while (changes.hasNext()) {
+        while (changes.hasNext() && !silentListener.isCanceled()) {
             Change change = changes.next();
             final String featurePath = featurePath(change);
             if (featurePath == null) {
@@ -457,9 +485,13 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 return fi;
             });
 
+            if (silentListener.isCanceled()) {
+                return -1;
+            }
+
             workTree.insert(finfos, DefaultProgressListener.NULL);
         }
-        if (!deletes.isEmpty()) {
+        if (!deletes.isEmpty() && !silentListener.isCanceled()) {
             workTree.delete(deletes.iterator(), DefaultProgressListener.NULL);
         }
         return cnt;
