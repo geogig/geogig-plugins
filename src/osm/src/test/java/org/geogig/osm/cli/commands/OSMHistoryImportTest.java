@@ -12,8 +12,10 @@ package org.geogig.osm.cli.commands;
 import java.io.File;
 import java.util.List;
 
+import org.geogig.osm.internal.history.HistoryDownloader;
 import org.geotools.referencing.CRS;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,9 +52,13 @@ public class OSMHistoryImportTest extends Assert {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @BeforeClass
-    public static void classSetup() {
+    public static @BeforeClass void beforeClass() {
         GlobalContextBuilder.builder(new CLIContextBuilder());
+        HistoryDownloader.alwaysResolveRemoteDownloader = true;
+    }
+
+    public static @AfterClass void afterClass() {
+        HistoryDownloader.alwaysResolveRemoteDownloader = false;
     }
 
     @Before

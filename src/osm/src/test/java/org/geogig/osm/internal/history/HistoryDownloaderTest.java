@@ -17,8 +17,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +42,14 @@ public class HistoryDownloaderTest extends Assert {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private File downloadFolder;
+
+    public static @BeforeClass void beforeClass() {
+        HistoryDownloader.alwaysResolveRemoteDownloader = true;
+    }
+
+    public static @AfterClass void afterClass() {
+        HistoryDownloader.alwaysResolveRemoteDownloader = false;
+    }
 
     @Before
     public void setUp() throws Exception {

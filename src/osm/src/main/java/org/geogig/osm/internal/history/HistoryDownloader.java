@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.locationtech.geogig.repository.ProgressListener;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -48,6 +49,9 @@ public class HistoryDownloader {
     private final ChangesetDownloader downloader;
 
     private Predicate<Changeset> filter = Predicates.alwaysTrue();
+
+    @VisibleForTesting
+    public static boolean alwaysResolveRemoteDownloader;
 
     /**
      * @param osmAPIUrl api url, e.g. {@code http://api.openstreetmap.org/api/0.6},
@@ -76,7 +80,7 @@ public class HistoryDownloader {
             throw Throwables.propagate(e);
         }
         String scheme = uri.getScheme();
-        if ("http".equals(scheme) || "https".equals(scheme)) {
+        if (alwaysResolveRemoteDownloader || "http".equals(scheme) || "https".equals(scheme)) {
             return new RemoteChangesetDownloader(osmAPIUrl, downloadFolder, executor);
         }
         if ("file".equals(scheme) || "".equals(scheme) || null == scheme) {
