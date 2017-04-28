@@ -45,6 +45,10 @@ public class HistoryImportArgs {
     @Parameter(hidden = true, names = "--bbox", description = "Filter by bounding box <min lon,min lat, max lon, max lat>")
     public String bbox;
 
+    @Parameter(names = { "--autoindex",
+            "-I" }, description = "Automatically create a spatial index if it doesn't exist")
+    public boolean autoIndex = false;
+
     @Parameter(hidden = true, names = "--download-only", description = "Only download the changes to the destination directory, do not import.")
     public boolean downloadOnly;
 

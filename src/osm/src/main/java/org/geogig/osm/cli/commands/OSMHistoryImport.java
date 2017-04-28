@@ -63,6 +63,8 @@ import org.locationtech.geogig.plumbing.ResolveTreeish;
 import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.porcelain.AddOp;
 import org.locationtech.geogig.porcelain.CommitOp;
+import org.locationtech.geogig.porcelain.index.CreateQuadTree;
+import org.locationtech.geogig.porcelain.index.Index;
 import org.locationtech.geogig.repository.DefaultProgressListener;
 import org.locationtech.geogig.repository.DiffObjectCount;
 import org.locationtech.geogig.repository.FeatureInfo;
@@ -73,6 +75,7 @@ import org.locationtech.geogig.repository.StagingArea;
 import org.locationtech.geogig.repository.WorkingTree;
 import org.locationtech.geogig.repository.impl.GeoGIG;
 import org.locationtech.geogig.storage.BlobStore;
+import org.locationtech.geogig.storage.IndexDatabase;
 import org.locationtech.geogig.storage.ObjectStore;
 import org.locationtech.geogig.storage.impl.Blobs;
 import org.opengis.feature.Feature;
@@ -90,7 +93,9 @@ import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -282,6 +287,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         GeoGIG geogig = cli.getGeogig();
         WorkingTree workingTree = geogig.getContext().workingTree();
 
+        boolean initialized = false;
         while (changesets.hasNext() && !silentListener.isCanceled()) {
             Changeset changeset = changesets.next();
             if (changeset.isOpen()) {
@@ -317,9 +323,53 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 console.print(String.format(" %,d actual changes.", diffCount.featureCount()));
                 console.flush();
 
+                if (args.autoIndex && !initialized) {
+                    ensureTypesExist(cli);
+                }
+
                 commit(cli, changeset);
+
+                if (args.autoIndex && !initialized) {
+                    initializeIndex(cli);
+                    initialized = true;
+                }
             }
         }
+    }
+
+    private void ensureTypesExist(GeogigCLI cli) throws IOException {
+        Repository repo = cli.getGeogig().getRepository();
+        WorkingTree workingTree = repo.workingTree();
+        ImmutableMap<String, NodeRef> featureTypeTrees = Maps
+                .uniqueIndex(workingTree.getFeatureTypeTrees(), (nr) -> nr.path());
+
+        if (!featureTypeTrees.containsKey(WAY_TYPE_NAME)) {
+            workingTree.createTypeTree(WAY_TYPE_NAME, wayType());
+        }
+        if (!featureTypeTrees.containsKey(NODE_TYPE_NAME)) {
+            workingTree.createTypeTree(NODE_TYPE_NAME, nodeType());
+        }
+        repo.command(AddOp.class).call();
+    }
+
+    private void initializeIndex(GeogigCLI cli) throws IOException {
+        Repository repo = cli.getGeogig().getRepository();
+
+        IndexDatabase indexdb = repo.indexDatabase();
+        if (indexdb.getIndexInfos(WAY_TYPE_NAME).isEmpty()) {
+            createIndex(cli, WAY_TYPE_NAME);
+        }
+        if (indexdb.getIndexInfos(NODE_TYPE_NAME).isEmpty()) {
+            createIndex(cli, NODE_TYPE_NAME);
+        }
+    }
+
+    private void createIndex(GeogigCLI cli, String typeName) throws IOException {
+        cli.getConsole().println("Creating initial index for " + typeName + "...");
+        Repository repo = cli.getGeogig().getRepository();
+        Index index = repo.command(CreateQuadTree.class).setIndexHistory(true)
+                .setTreeRefSpec(typeName).call();
+        cli.getConsole().println("Initial index created: " + index);
     }
 
     /**
