@@ -394,14 +394,17 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             message = "changeset " + changeset.getId();
         }
         command.setMessage(message);
-        final String userName = changeset.getUserName();
+        final @Nullable String userName = changeset.getUserName();
         command.setAuthor(userName, null);
         command.setAuthorTimestamp(changeset.getCreated());
         command.setAuthorTimeZoneOffset(0);// osm timestamps are in GMT
 
-        if (userName != null) {
+        if (userName == null) {
+            command.setCommitter("anonymous", null);
+        } else {
             command.setCommitter(userName, null);
         }
+
         command.setCommitterTimestamp(changeset.getClosed().get());
         command.setCommitterTimeZoneOffset(0);// osm timestamps are in GMT
 
