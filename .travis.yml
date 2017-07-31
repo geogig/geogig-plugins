@@ -1,0 +1,11 @@
+cache:
+  directories:
+    - "$HOME/.m2"
+language: java
+jdk:
+  - oraclejdk8
+before_install:
+  - cd src/parent
+install: mvn -B -U clean compile
+notifications:
+  email: false
