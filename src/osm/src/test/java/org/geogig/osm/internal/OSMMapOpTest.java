@@ -33,14 +33,14 @@ import org.locationtech.geogig.repository.WorkingTree;
 import org.locationtech.geogig.storage.BlobStore;
 import org.locationtech.geogig.storage.impl.Blobs;
 import org.locationtech.geogig.test.integration.RepositoryTestCase;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.io.WKTReader;
 import org.opengis.feature.type.PropertyDescriptor;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.io.WKTReader;
 
 public class OSMMapOpTest extends RepositoryTestCase {
     @Rule

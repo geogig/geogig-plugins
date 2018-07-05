@@ -29,6 +29,7 @@ import org.locationtech.geogig.geotools.cli.postgis.PGSupport;
 import org.locationtech.geogig.geotools.plumbing.ExportOp;
 import org.locationtech.geogig.geotools.plumbing.GeoToolsOpException;
 import org.locationtech.geogig.repository.ProgressListener;
+import org.locationtech.jts.geom.Point;
 import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.GeometryDescriptor;
@@ -40,7 +41,6 @@ import com.beust.jcommander.ParametersDelegate;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.vividsolutions.jts.geom.Point;
 
 /**
  * Exports OSM into a PostGIS database, using a data mapping

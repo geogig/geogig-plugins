@@ -37,6 +37,7 @@ import org.locationtech.geogig.plumbing.ResolveTreeish;
 import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.plumbing.RevParse;
 import org.locationtech.geogig.repository.impl.GeoGIG;
+import org.locationtech.jts.geom.Envelope;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
@@ -56,7 +57,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.vividsolutions.jts.geom.Envelope;
 
 import crosby.binary.osmosis.OsmosisSerializer;
 

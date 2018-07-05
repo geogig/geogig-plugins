@@ -12,9 +12,7 @@ package org.geogig.osm.internal.coordcache;
 import java.util.List;
 
 import org.geogig.osm.internal.OSMCoordinateSequence;
-
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.LineString;
+import org.locationtech.jts.geom.CoordinateSequence;
 
 /**
  * A Temporary cache of coordinates for the osm import operation to save node coordinates by node

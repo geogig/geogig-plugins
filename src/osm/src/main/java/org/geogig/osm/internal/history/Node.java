@@ -9,8 +9,9 @@
  */
 package org.geogig.osm.internal.history;
 
+import org.locationtech.jts.geom.Point;
+
 import com.google.common.base.Optional;
-import com.vividsolutions.jts.geom.Point;
 
 /**
  *

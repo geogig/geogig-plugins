@@ -34,11 +34,11 @@ import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.repository.impl.GeoGIG;
 import org.locationtech.geogig.repository.impl.GlobalContextBuilder;
 import org.locationtech.geogig.test.TestPlatform;
+import org.locationtech.jts.geom.Polygon;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.vividsolutions.jts.geom.Polygon;
 
 public class OSMMapTest extends Assert {
 

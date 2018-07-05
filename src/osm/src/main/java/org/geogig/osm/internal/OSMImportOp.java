@@ -47,6 +47,12 @@ import org.locationtech.geogig.repository.SubProgressListener;
 import org.locationtech.geogig.repository.WorkingTree;
 import org.locationtech.geogig.repository.impl.FeatureToDelete;
 import org.locationtech.geogig.storage.ObjectDatabase;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.openstreetmap.osmosis.core.OsmosisRuntimeException;
@@ -68,12 +74,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.io.Closeables;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.PrecisionModel;
 
 import crosby.binary.osmosis.OsmosisReader;
 

@@ -16,10 +16,10 @@ import java.io.InputStream;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.locationtech.jts.geom.Envelope;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closeables;
-import com.vividsolutions.jts.geom.Envelope;
 
 /**
  *

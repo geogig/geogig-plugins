@@ -11,11 +11,12 @@ package org.geogig.osm.internal;
 
 import java.io.Serializable;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.CoordinateSequenceFactory;
+import org.locationtech.jts.geom.impl.CoordinateArraySequence;
+
 import com.google.common.base.Preconditions;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 
 /**
  * A {@link CoordinateSequenceFactory} that produces packed sequences of coordinates as

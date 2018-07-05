@@ -20,6 +20,7 @@ import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.locationtech.geogig.model.FieldType;
 import org.locationtech.geogig.repository.ProgressListener;
+import org.locationtech.jts.geom.LineString;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.feature.type.AttributeType;
@@ -33,7 +34,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.vividsolutions.jts.geom.LineString;
 
 public class OSMUtils {
 

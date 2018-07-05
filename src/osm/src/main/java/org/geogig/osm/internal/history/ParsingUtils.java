@@ -13,7 +13,7 @@ import java.util.Calendar;
 
 import javax.xml.bind.DatatypeConverter;
 
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  *

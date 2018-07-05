@@ -14,12 +14,12 @@ import static org.openstreetmap.osmosis.core.util.FixedPrecisionCoordinateConver
 
 import java.io.Serializable;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Envelope;
 import org.openstreetmap.osmosis.core.util.FixedPrecisionCoordinateConvertor;
 
 import com.google.common.base.Preconditions;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * A {@link CoordinateSequence} implementation that packs ordinates in int arrays, following the
@@ -137,5 +137,10 @@ public class OSMCoordinateSequence implements CoordinateSequence, Serializable {
     public int[] ordinates() {
         return coords;
     }
+
+	@Override
+	public CoordinateSequence copy() {
+		return clone();
+	}
 
 }
