@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.geogig</groupId>
     <artifactId>geogig-plugins</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.4-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
