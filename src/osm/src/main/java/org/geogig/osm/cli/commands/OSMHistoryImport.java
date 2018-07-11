@@ -45,7 +45,6 @@ import org.locationtech.geogig.cli.CommandFailedException;
 import org.locationtech.geogig.cli.Console;
 import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.cli.InvalidParameterException;
-import org.locationtech.geogig.data.FeatureBuilder;
 import org.locationtech.geogig.model.NodeRef;
 import org.locationtech.geogig.model.ObjectId;
 import org.locationtech.geogig.model.Ref;
@@ -56,22 +55,19 @@ import org.locationtech.geogig.model.RevTree;
 import org.locationtech.geogig.model.SymRef;
 import org.locationtech.geogig.model.impl.RevFeatureBuilder;
 import org.locationtech.geogig.model.impl.RevFeatureTypeBuilder;
-import org.locationtech.geogig.plumbing.DiffCount;
 import org.locationtech.geogig.plumbing.FindTreeChild;
 import org.locationtech.geogig.plumbing.RefParse;
 import org.locationtech.geogig.plumbing.ResolveTreeish;
-import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.porcelain.AddOp;
 import org.locationtech.geogig.porcelain.CommitOp;
 import org.locationtech.geogig.porcelain.index.CreateQuadTree;
 import org.locationtech.geogig.porcelain.index.Index;
+import org.locationtech.geogig.repository.Context;
 import org.locationtech.geogig.repository.DefaultProgressListener;
-import org.locationtech.geogig.repository.DiffObjectCount;
 import org.locationtech.geogig.repository.FeatureInfo;
 import org.locationtech.geogig.repository.Platform;
 import org.locationtech.geogig.repository.ProgressListener;
 import org.locationtech.geogig.repository.Repository;
-import org.locationtech.geogig.repository.StagingArea;
 import org.locationtech.geogig.repository.WorkingTree;
 import org.locationtech.geogig.repository.impl.GeoGIG;
 import org.locationtech.geogig.storage.BlobStore;
@@ -83,7 +79,6 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.opengis.feature.Feature;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
@@ -95,6 +90,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -285,10 +281,12 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         Iterator<Changeset> changesets = downloader.fetchChangesets();
 
         GeoGIG geogig = cli.getGeogig();
-        WorkingTree workingTree = geogig.getContext().workingTree();
 
         boolean initialized = false;
+        Stopwatch sw = Stopwatch.createUnstarted();
+        
         while (changesets.hasNext() && !silentListener.isCanceled()) {
+            sw.reset().start();
             Changeset changeset = changesets.next();
             if (changeset.isOpen()) {
                 throw new CommandFailedException("Can't import past changeset " + changeset.getId()
@@ -303,25 +301,18 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 updateBranchChangeset(geogig, changeset.getId());
                 console.println(" does not apply.");
                 console.flush();
+                sw.stop();
                 continue;
             }
             Iterator<Change> changes = opchanges.get();
             console.print(" inserting...");
             console.flush();
 
-            ObjectId workTreeId = workingTree.getTree().getId();
             long changeCount = insertChanges(cli, changes, featureFilter);
             if (!silentListener.isCanceled()) {
                 console.print(String.format(" Applied %,d changes, staging...", changeCount));
                 console.flush();
-                ObjectId afterTreeId = workingTree.getTree().getId();
-
-                DiffObjectCount diffCount = geogig.command(DiffCount.class).setOldTree(workTreeId)
-                        .setNewTree(afterTreeId).setProgressListener(silentListener).call();
-
                 geogig.command(AddOp.class).setProgressListener(silentListener).call();
-                console.print(String.format(" %,d actual changes.", diffCount.featureCount()));
-                console.flush();
 
                 if (args.autoIndex && !initialized) {
                     ensureTypesExist(cli);
@@ -334,6 +325,8 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                     initialized = true;
                 }
             }
+            console.println(String.format( " (%s)", sw.stop()));
+            console.flush();
         }
     }
 
@@ -419,8 +412,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             String commitStr = newAnsi(console).fg(Color.YELLOW)
                     .a(commit.getId().toString().substring(0, 8)).reset().toString();
             console.print(" Commit ");
-            console.println(commitStr);
-            console.flush();
+            console.print(commitStr);
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
@@ -471,8 +463,9 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             @Nullable Envelope featureFilter) throws IOException {
 
         final GeoGIG geogig = cli.getGeogig();
-        final Repository repository = geogig.getRepository();
-        final WorkingTree workTree = repository.workingTree();
+        final Context context = geogig.getContext().snapshot();
+        final Repository repository = context.repository();
+        final WorkingTree workTree = context.workingTree();
 
         Map<Long, Coordinate> thisChangePointCache = new LinkedHashMap<Long, Coordinate>() {
             /** serialVersionUID */
@@ -502,7 +495,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             } else {
                 final Primitive primitive = change.getNode().isPresent() ? change.getNode().get()
                         : change.getWay().get();
-                final Geometry geom = parseGeometry(geogig, primitive, thisChangePointCache);
+                final Geometry geom = parseGeometry(context, primitive, thisChangePointCache);
                 if (geom instanceof Point) {
                     thisChangePointCache.put(Long.valueOf(primitive.getId()),
                             ((Point) geom).getCoordinate());
@@ -555,7 +548,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
      * @param thisChangePointCache
      * @return
      */
-    private Geometry parseGeometry(GeoGIG geogig, Primitive primitive,
+    private Geometry parseGeometry(Context context, Primitive primitive,
             Map<Long, Coordinate> thisChangePointCache) {
 
         if (primitive instanceof Relation) {
@@ -570,41 +563,30 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         final Way way = (Way) primitive;
         final ImmutableList<Long> nodes = way.getNodes();
 
-        StagingArea index = geogig.getRepository().index();
-
-        FeatureBuilder featureBuilder = new FeatureBuilder(NODE_REV_TYPE);
         List<Coordinate> coordinates = Lists.newArrayList(nodes.size());
-        FindTreeChild findTreeChild = geogig.command(FindTreeChild.class);
-        ObjectId rootTreeId = geogig.command(ResolveTreeish.class).setTreeish(Ref.HEAD).call()
-                .get();
-        if (!rootTreeId.isNull()) {
-            RevTree headTree = geogig.command(RevObjectParse.class).setObjectId(rootTreeId)
-                    .call(RevTree.class).get();
+        FindTreeChild findTreeChild = context.command(FindTreeChild.class);
+        Optional<ObjectId> nodesTreeId = context.command(ResolveTreeish.class)
+                .setTreeish(Ref.STAGE_HEAD + ":" + NODE_TYPE_NAME).call();
+        if (nodesTreeId.isPresent()) {
+            RevTree headTree = context.objectDatabase().getTree(nodesTreeId.get());
             findTreeChild.setParent(headTree);
         }
-        ObjectStore objectDatabase = geogig.getContext().objectDatabase();
+        ObjectStore objectDatabase = context.objectDatabase();
         for (Long nodeId : nodes) {
             Coordinate coord = thisChangePointCache.get(nodeId);
             if (coord == null) {
                 String fid = String.valueOf(nodeId);
-                String path = NodeRef.appendChild(NODE_TYPE_NAME, fid);
-                Optional<org.locationtech.geogig.model.Node> ref = index.findStaged(path);
-                if (!ref.isPresent()) {
-                    Optional<NodeRef> nodeRef = findTreeChild.setChildPath(path).call();
-                    if (nodeRef.isPresent()) {
-                        ref = Optional.of(nodeRef.get().getNode());
-                    } else {
-                        ref = Optional.absent();
-                    }
+                Optional<NodeRef> nodeRef = findTreeChild.setChildPath(fid).call();
+                Optional<org.locationtech.geogig.model.Node> ref = Optional.absent();
+                if (nodeRef.isPresent()) {
+                    ref = Optional.of(nodeRef.get().getNode());
                 }
+
                 if (ref.isPresent()) {
-                    org.locationtech.geogig.model.Node nodeRef = ref.get();
-
-                    RevFeature revFeature = objectDatabase.getFeature(nodeRef.getObjectId());
-                    String id = NodeRef.nodeFromPath(nodeRef.getName());
-                    Feature feature = featureBuilder.build(id, revFeature);
-
-                    Point p = (Point) ((SimpleFeature) feature).getAttribute("location");
+                    final int locationAttIndex = 6;
+                    ObjectId objectId = ref.get().getObjectId();
+                    RevFeature revFeature = objectDatabase.getFeature(objectId);
+                    Point p = (Point) revFeature.get(locationAttIndex, GEOMF).orNull();
                     if (p != null) {
                         coord = p.getCoordinate();
                         thisChangePointCache.put(Long.valueOf(nodeId), coord);
@@ -637,14 +619,13 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
         return NodeRef.appendChild(WAY_TYPE_NAME, fid);
     }
 
-    private static final RevFeatureType NODE_REV_TYPE = RevFeatureTypeBuilder.build(nodeType());
-
     private static SimpleFeature toFeature(Primitive feature, Geometry geom) {
 
         SimpleFeatureType ft = feature instanceof Node ? nodeType() : wayType();
         SimpleFeatureBuilder builder = new SimpleFeatureBuilder(ft);
 
-        // "visible:Boolean,version:Int,timestamp:long,[location:Point | way:LineString];
+        // "visible:Boolean,version:Int,timestamp:long,[location:Point |
+        // way:LineString];
         builder.set("visible", Boolean.valueOf(feature.isVisible()));
         builder.set("version", Integer.valueOf(feature.getVersion()));
         builder.set("timestamp", Long.valueOf(feature.getTimestamp()));
