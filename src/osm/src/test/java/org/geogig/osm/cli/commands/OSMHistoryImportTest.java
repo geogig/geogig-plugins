@@ -22,7 +22,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.locationtech.geogig.cli.CLIContextBuilder;
 import org.locationtech.geogig.cli.Console;
 import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.model.DiffEntry;
@@ -32,7 +31,6 @@ import org.locationtech.geogig.model.RevFeatureType;
 import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.porcelain.DiffOp;
 import org.locationtech.geogig.repository.impl.GeoGIG;
-import org.locationtech.geogig.repository.impl.GlobalContextBuilder;
 import org.locationtech.geogig.test.TestPlatform;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -53,7 +51,6 @@ public class OSMHistoryImportTest extends Assert {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     public static @BeforeClass void beforeClass() {
-        GlobalContextBuilder.builder(new CLIContextBuilder());
         HistoryDownloader.alwaysResolveRemoteDownloader = true;
     }
 

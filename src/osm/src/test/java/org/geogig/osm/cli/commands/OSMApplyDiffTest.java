@@ -14,17 +14,14 @@ import java.io.File;
 import org.geogig.osm.internal.OSMImportOp;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.locationtech.geogig.cli.CLIContextBuilder;
 import org.locationtech.geogig.cli.Console;
 import org.locationtech.geogig.cli.GeogigCLI;
 import org.locationtech.geogig.model.RevFeature;
 import org.locationtech.geogig.plumbing.RevObjectParse;
 import org.locationtech.geogig.repository.impl.GeoGIG;
-import org.locationtech.geogig.repository.impl.GlobalContextBuilder;
 import org.locationtech.geogig.test.TestPlatform;
 
 import com.google.common.base.Optional;
@@ -35,11 +32,6 @@ public class OSMApplyDiffTest extends Assert {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @BeforeClass
-    public static void classSetup() {
-        GlobalContextBuilder.builder(new CLIContextBuilder());
-    }
 
     @Before
     public void setUp() throws Exception {

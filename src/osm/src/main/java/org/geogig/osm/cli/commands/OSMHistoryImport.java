@@ -16,13 +16,11 @@ import static org.geogig.osm.internal.OSMUtils.wayType;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -32,6 +30,7 @@ import javax.management.relation.Relation;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.fusesource.jansi.Ansi.Color;
+import org.geogig.osm.internal.OSMUtils;
 import org.geogig.osm.internal.history.Change;
 import org.geogig.osm.internal.history.Changeset;
 import org.geogig.osm.internal.history.HistoryDownloader;
@@ -81,7 +80,6 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.FeatureType;
 
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
@@ -92,13 +90,9 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -108,6 +102,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
     private static final GeometryFactory GEOMF = new GeometryFactory();
+
+    final RevFeatureType noderft = RevFeatureTypeBuilder.build(OSMUtils.nodeType());
+
+    final RevFeatureType wayrft = RevFeatureTypeBuilder.build(OSMUtils.wayType());
 
     private static class SilentProgressListener extends DefaultProgressListener {
         private ProgressListener subject;
@@ -278,13 +276,15 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
     private void importOsmHistory(GeogigCLI cli, Console console, HistoryDownloader downloader,
             @Nullable Envelope featureFilter) throws IOException {
 
+        ensureTypesExist(cli);
+
         Iterator<Changeset> changesets = downloader.fetchChangesets();
 
         GeoGIG geogig = cli.getGeogig();
 
         boolean initialized = false;
         Stopwatch sw = Stopwatch.createUnstarted();
-        
+
         while (changesets.hasNext() && !silentListener.isCanceled()) {
             sw.reset().start();
             Changeset changeset = changesets.next();
@@ -313,11 +313,6 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                 console.print(String.format(" Applied %,d changes, staging...", changeCount));
                 console.flush();
                 geogig.command(AddOp.class).setProgressListener(silentListener).call();
-
-                if (args.autoIndex && !initialized) {
-                    ensureTypesExist(cli);
-                }
-
                 commit(cli, changeset);
 
                 if (args.autoIndex && !initialized) {
@@ -325,7 +320,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
                     initialized = true;
                 }
             }
-            console.println(String.format( " (%s)", sw.stop()));
+            console.println(String.format(" (%s)", sw.stop()));
             console.flush();
         }
     }
@@ -464,7 +459,6 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
         final GeoGIG geogig = cli.getGeogig();
         final Context context = geogig.getContext().snapshot();
-        final Repository repository = context.repository();
         final WorkingTree workTree = context.workingTree();
 
         Map<Long, Coordinate> thisChangePointCache = new LinkedHashMap<Long, Coordinate>() {
@@ -479,8 +473,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
         long cnt = 0;
 
-        Set<String> deletes = Sets.newHashSet();
-        Multimap<String, SimpleFeature> insertsByParent = HashMultimap.create();
+        List<FeatureInfo> features = new ArrayList<>();
 
         while (changes.hasNext() && !silentListener.isCanceled()) {
             Change change = changes.next();
@@ -491,7 +484,7 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             final String parentPath = NodeRef.parentPath(featurePath);
             if (Change.Type.delete.equals(change.getType())) {
                 cnt++;
-                deletes.add(featurePath);
+                features.add(FeatureInfo.delete(featurePath));
             } else {
                 final Primitive primitive = change.getNode().isPresent() ? change.getNode().get()
                         : change.getWay().get();
@@ -505,41 +498,26 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
 
                 if (featureFilter == null
                         || featureFilter.intersects((Envelope) feature.getBounds())) {
-                    insertsByParent.put(parentPath, feature);
+
+                    RevFeatureType rft = NODE_TYPE_NAME.equals(parentPath) ? noderft : wayrft;
+                    String path = NodeRef.appendChild(parentPath, feature.getID());
+                    FeatureInfo fi = FeatureInfo.insert(RevFeatureBuilder.build(feature),
+                            rft.getId(), path);
+                    features.add(fi);
                     cnt++;
                 }
             }
         }
 
-        for (String parentPath : insertsByParent.keySet()) {
-            Collection<SimpleFeature> features = insertsByParent.get(parentPath);
-            if (features.isEmpty()) {
-                continue;
-            }
-
-            Map<FeatureType, RevFeatureType> types = new HashMap<>();
-            Iterator<FeatureInfo> finfos = Iterators.transform(features.iterator(), (f) -> {
-                FeatureType ft = f.getType();
-                RevFeatureType rft = types.get(ft);
-                if (rft == null) {
-                    rft = RevFeatureTypeBuilder.build(ft);
-                    types.put(ft, rft);
-                    repository.objectDatabase().put(rft);
-                }
-                String path = NodeRef.appendChild(parentPath, f.getIdentifier().getID());
-                FeatureInfo fi = FeatureInfo.insert(RevFeatureBuilder.build(f), rft.getId(), path);
-                return fi;
-            });
-
-            if (silentListener.isCanceled()) {
-                return -1;
-            }
-
-            workTree.insert(finfos, DefaultProgressListener.NULL);
+        if (silentListener.isCanceled()) {
+            return -1;
         }
-        if (!deletes.isEmpty() && !silentListener.isCanceled()) {
-            workTree.delete(deletes.iterator(), DefaultProgressListener.NULL);
-        }
+
+//        System.err.printf("\nInserting %,d changes\n", features.size());
+//        Stopwatch sw = Stopwatch.createStarted();
+        workTree.insert(features.iterator(), DefaultProgressListener.NULL);
+//        System.err.printf("workTree.insert: %s\n", sw.stop());
+
         return cnt;
     }
 
@@ -571,12 +549,17 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             RevTree headTree = context.objectDatabase().getTree(nodesTreeId.get());
             findTreeChild.setParent(headTree);
         }
+        int findTreeChildCalls = 0;
+        Stopwatch findTreeChildSW = Stopwatch.createUnstarted();
         ObjectStore objectDatabase = context.objectDatabase();
         for (Long nodeId : nodes) {
             Coordinate coord = thisChangePointCache.get(nodeId);
             if (coord == null) {
+                findTreeChildCalls++;
                 String fid = String.valueOf(nodeId);
+                findTreeChildSW.start();
                 Optional<NodeRef> nodeRef = findTreeChild.setChildPath(fid).call();
+                findTreeChildSW.stop();
                 Optional<org.locationtech.geogig.model.Node> ref = Optional.absent();
                 if (nodeRef.isPresent()) {
                     ref = Optional.of(nodeRef.get().getNode());
@@ -596,6 +579,10 @@ public class OSMHistoryImport extends AbstractCommand implements CLICommand {
             if (coord != null) {
                 coordinates.add(coord);
             }
+        }
+        if (findTreeChildCalls > 0) {
+//            System.err.printf("%,d findTreeChild calls (%s)\n", findTreeChildCalls,
+//                    findTreeChildSW);
         }
         if (coordinates.size() < 2) {
             return null;

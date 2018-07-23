@@ -23,7 +23,13 @@
     </dependency>
     <dependency>
       <groupId>org.locationtech.geogig</groupId>
-      <artifactId>geogig-cli</artifactId>
+      <artifactId>geogig-cli-core</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.locationtech.geogig</groupId>
+      <artifactId>geogig-cli-geotools</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -135,7 +141,7 @@
     </dependency>
     <dependency>
       <groupId>org.locationtech.geogig</groupId>
-      <artifactId>geogig-cli</artifactId>
+      <artifactId>geogig-cli-core</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <classifier>tests</classifier>
